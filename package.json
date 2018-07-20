@@ -1,0 +1,28 @@
+{
+  "name": "renaox",
+  "version": "0.0.1-alpha.2",
+  "description": "a boring state management",
+  "main": "index.js",
+  "scripts": {
+    "build": "babel --out-dir ./dist src/index.js "
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@cnyballk:cnyballk/regax.git"
+  },
+  "author": "cnyballk",
+  "license": "ISC",
+  "dependencies": {
+    "babel-core": "^6.26.3",
+    "babel-runtime": "^6.26.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-react": "^6.24.1",
+    "react": "^16.4.1",
+    "react-dom": "^16.4.1"
+  }
+}
