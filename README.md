@@ -21,7 +21,7 @@ npm install --save renaox
 ```js
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Store } from 'renaox';
+import { Store, Provider, orm } from './index.1';
 function Count(props) {
   return (
     <div>
@@ -31,30 +31,32 @@ function Count(props) {
     </div>
   );
 }
+
+const mapState = state => ({
+  count: state.count,
+});
+const mapContros = contros => ({
+  addCount: contros.addCount,
+  subtractCount: contros.subtractCount,
+});
+const CountContainer = orm(mapState, mapContros)(Count);
+
 const state = {
   count: 0,
 };
 const contros = {
   addCount(state) {
-    return { ...state, count: state.count + 1 };
+    state.count = state.count + 1;
   },
   subtractCount(state) {
-    return { ...state, count: state.count - 1 };
+    state.count = state.count - 1;
   },
 };
 const store = new Store({ state, contros });
-
-store.listen(update);
-
-function update() {
-  ReactDOM.render(
-    <Count
-      count={store.state.count}
-      addCount={store.notify('addCount')}
-      subtractCount={store.notify('subtractCount')}
-    />,
-    document.getElementById('root')
-  );
-}
-update();
+ReactDOM.render(
+  <Provider store={store}>
+    <CountContainer />
+  </Provider>,
+  document.getElementById('root')
+);
 ```

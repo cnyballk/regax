@@ -3,7 +3,11 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Provider = exports.Store = undefined;
+exports.Provider = exports.orm = exports.Store = undefined;
+
+var _extends2 = require('babel-runtime/helpers/extends');
+
+var _extends3 = _interopRequireDefault(_extends2);
 
 var _getPrototypeOf = require('babel-runtime/core-js/object/get-prototype-of');
 
@@ -29,14 +33,18 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
+var _immer = require('immer');
+
+var _immer2 = _interopRequireDefault(_immer);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 //////////////////// util
 var toType = function toType(obj) {
   return {}.toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase();
 };
-// import { toType } from './util/index.js';
-var Context = (0, _react.createContext)();
+var mContext = (0, _react.createContext)();
+////////////////////////////////////////////////////////////////
 
 //////////////// Store
 
@@ -47,7 +55,7 @@ var Store = exports.Store = function () {
     (0, _classCallCheck3.default)(this, Store);
 
     this.state = state;
-    this.contros = contros;
+    this.contros = this.notify(contros);
     this.listeners = [];
   }
 
@@ -57,34 +65,116 @@ var Store = exports.Store = function () {
       return this.listeners.push(listener);
     }
   }, {
+    key: 'unListen',
+    value: function unListen(listener) {
+      return this.listeners.filter(function (fn) {
+        return fn !== listener;
+      });
+    }
+  }, {
     key: 'getState',
     value: function getState() {
       return this.state;
     }
   }, {
     key: 'notify',
-    value: function notify(contro) {
+    value: function notify(contros) {
       var _this = this;
 
-      return function () {
-        var newState = _this.contros[contro](_this.state);
-        if (toType(newState) !== 'object') throw Error('Hey,Brother, please return an object');
-        _this.state = newState;
-        _this.listeners.forEach(function (fn) {
-          return fn();
-        });
+      var c = {};
+
+      var _loop = function _loop(contro) {
+        c[contro] = function () {
+          var newState = (0, _immer2.default)(contros[contro])(_this.state);
+          _this.state = newState;
+          _this.listeners.forEach(function (fn) {
+            return fn();
+          });
+          console.log(_this.state);
+        };
       };
+
+      for (var contro in contros) {
+        _loop(contro);
+      }
+      return c;
     }
   }]);
   return Store;
 }();
+////////////////////////////////////////////////////////////////
+
+//////////////// Hoc orm  ===>  {state,contro}
+
+
+var orm = exports.orm = function orm(mapState, mapNotify) {
+  return function (WarpperComponent) {
+    return function (_Component) {
+      (0, _inherits3.default)(_class, _Component);
+
+      function _class(props) {
+        (0, _classCallCheck3.default)(this, _class);
+
+        var _this2 = (0, _possibleConstructorReturn3.default)(this, (_class.__proto__ || (0, _getPrototypeOf2.default)(_class)).call(this, props));
+
+        _this2._isMounted = false;
+        _this2.state = {};
+        _this2._listen = _this2._listen.bind(_this2);
+        _this2.updata = _this2.updata.bind(_this2);
+        return _this2;
+      }
+
+      (0, _createClass3.default)(_class, [{
+        key: 'componentDidMount',
+        value: function componentDidMount() {
+          this._isMounted = true;
+          this.store.listen(this.updata);
+        }
+      }, {
+        key: 'componentWillUnmount',
+        value: function componentWillUnmount() {
+          this._isMounted = false;
+          this.store.unListen(this.updata);
+        }
+      }, {
+        key: 'updata',
+        value: function updata() {
+          this.setState({});
+        }
+      }, {
+        key: '_listen',
+        value: function _listen(context) {
+          if (!context) throw Error('Please be wrapped in a <Provider/>');
+          var stateToProps = mapState(context.state);
+          var controToProps = mapNotify(context.contros);
+          return (0, _extends3.default)({}, stateToProps, controToProps);
+        }
+      }, {
+        key: 'render',
+        value: function render() {
+          var _this3 = this;
+
+          return _react2.default.createElement(
+            mContext.Consumer,
+            null,
+            function (context) {
+              _this3.store = context;
+              return _react2.default.createElement(WarpperComponent, _this3._listen(context));
+            }
+          );
+        }
+      }]);
+      return _class;
+    }(_react.Component);
+  };
+};
+
 ////////////////////////////////////////////////
 
 ////////////////Provider
 
-
-var Provider = exports.Provider = function (_Component) {
-  (0, _inherits3.default)(Provider, _Component);
+var Provider = exports.Provider = function (_Component2) {
+  (0, _inherits3.default)(Provider, _Component2);
 
   function Provider() {
     (0, _classCallCheck3.default)(this, Provider);
@@ -95,7 +185,7 @@ var Provider = exports.Provider = function (_Component) {
     key: 'render',
     value: function render() {
       return _react2.default.createElement(
-        Context.Provider,
+        mContext.Provider,
         { value: this.props.store },
         this.props.children
       );
@@ -103,4 +193,3 @@ var Provider = exports.Provider = function (_Component) {
   }]);
   return Provider;
 }(_react.Component);
-////////////////////////////////////////////////
