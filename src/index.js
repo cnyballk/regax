@@ -42,7 +42,7 @@ export class Store {
 ////////////////////////////////////////////////////////////////
 
 //////////////// Hoc orm  ===>  {state,contro}
-export const orm = (mapState, mapNotify) => WarpperComponent =>
+export const orm = (mapState, mapContros) => WarpperComponent =>
   class extends Component {
     constructor(props) {
       super(props);
@@ -65,7 +65,7 @@ export const orm = (mapState, mapNotify) => WarpperComponent =>
     _listen(context) {
       if (!context) throw Error('Please be wrapped in a <Provider/>');
       const stateToProps = mapState(context.state);
-      const controToProps = mapNotify(context.contros);
+      const controToProps = mapContros(context.contros);
       return {
         ...stateToProps,
         ...controToProps,
