@@ -21,7 +21,7 @@ npm install --save renaox
 ```js
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Store, Provider, orm } from './index.1';
+import { Store, Provider, orm } from 'renaox';
 function Count(props) {
   return (
     <div>
