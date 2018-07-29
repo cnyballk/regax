@@ -1,5 +1,7 @@
 import React, { Component, createContext } from 'react';
 import produce from 'immer';
+
+const mContext = createContext();
 //////////////////// util
 const toType = obj => {
   return {}.toString
@@ -7,7 +9,6 @@ const toType = obj => {
     .match(/\s([a-zA-Z]+)/)[1]
     .toLowerCase();
 };
-const mContext = createContext();
 ////////////////////////////////////////////////////////////////
 
 //////////////// Store
@@ -28,12 +29,21 @@ export class Store {
   }
   notify(contros) {
     let c = {};
-    for (let contro in contros) {
+    let that = this;
+    for (let contro in contros.syncs) {
       c[contro] = () => {
-        const newState = produce(contros[contro])(this.state);
+        const newState = produce(contros.syncs[contro]).bind(
+          this,
+          that.state
+        )();
         this.state = newState;
         this.listeners.forEach(fn => fn());
-        console.log(this.state);
+      };
+    }
+    for (let contro in contros.asyncs) {
+      c[contro] = () => {
+        contros.asyncs[contro].bind(this.contros, this.state)();
+        this.listeners.forEach(fn => fn());
       };
     }
     return c;

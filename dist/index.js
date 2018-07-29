@@ -39,11 +39,11 @@ var _immer2 = _interopRequireDefault(_immer);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+var mContext = (0, _react.createContext)();
 //////////////////// util
 var toType = function toType(obj) {
   return {}.toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase();
 };
-var mContext = (0, _react.createContext)();
 ////////////////////////////////////////////////////////////////
 
 //////////////// Store
@@ -82,20 +82,33 @@ var Store = exports.Store = function () {
       var _this = this;
 
       var c = {};
+      var that = this;
 
       var _loop = function _loop(contro) {
         c[contro] = function () {
-          var newState = (0, _immer2.default)(contros[contro])(_this.state);
+          var newState = (0, _immer2.default)(contros.syncs[contro]).bind(_this, that.state)();
           _this.state = newState;
           _this.listeners.forEach(function (fn) {
             return fn();
           });
-          console.log(_this.state);
         };
       };
 
-      for (var contro in contros) {
+      for (var contro in contros.syncs) {
         _loop(contro);
+      }
+
+      var _loop2 = function _loop2(contro) {
+        c[contro] = function () {
+          contros.asyncs[contro].bind(_this.contros, _this.state)();
+          _this.listeners.forEach(function (fn) {
+            return fn();
+          });
+        };
+      };
+
+      for (var contro in contros.asyncs) {
+        _loop2(contro);
       }
       return c;
     }
@@ -107,7 +120,7 @@ var Store = exports.Store = function () {
 //////////////// Hoc orm  ===>  {state,contro}
 
 
-var orm = exports.orm = function orm(mapState, mapNotify) {
+var orm = exports.orm = function orm(mapState, mapContros) {
   return function (WarpperComponent) {
     return function (_Component) {
       (0, _inherits3.default)(_class, _Component);
@@ -146,7 +159,7 @@ var orm = exports.orm = function orm(mapState, mapNotify) {
         value: function _listen(context) {
           if (!context) throw Error('Please be wrapped in a <Provider/>');
           var stateToProps = mapState(context.state);
-          var controToProps = mapNotify(context.contros);
+          var controToProps = mapContros(context.contros);
           return (0, _extends3.default)({}, stateToProps, controToProps);
         }
       }, {

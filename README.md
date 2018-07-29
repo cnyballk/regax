@@ -22,37 +22,52 @@ npm install --save renaox
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Store, Provider, orm } from 'renaox';
-function Count(props) {
+
+const Count = props => {
   return (
     <div>
       <div>count : {props.count}</div>
       <button onClick={props.addCount}>count + 1</button>
+      <button onClick={props.asyncAddCount}>async count + 1</button>
       <button onClick={props.subtractCount}>count - 1</button>
     </div>
   );
-}
+};
 
 const mapState = state => ({
   count: state.count,
 });
+
 const mapContros = contros => ({
   addCount: contros.addCount,
   subtractCount: contros.subtractCount,
+  asyncAddCount: contros.asyncAddCount,
 });
+
 const CountContainer = orm(mapState, mapContros)(Count);
 
 const state = {
   count: 0,
 };
+
 const contros = {
-  addCount(state) {
-    state.count = state.count + 1;
+  syncs: {
+    addCount(state) {
+      state.count = state.count + 1;
+    },
+    subtractCount(state) {
+      state.count = state.count - 1;
+    },
   },
-  subtractCount(state) {
-    state.count = state.count - 1;
+  asyncs: {
+    asyncAddCount() {
+      setTimeout(this.addCount, 1e3);
+    },
   },
 };
+
 const store = new Store({ state, contros });
+
 ReactDOM.render(
   <Provider store={store}>
     <CountContainer />
