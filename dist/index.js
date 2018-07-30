@@ -29,6 +29,10 @@ var _createClass2 = require('babel-runtime/helpers/createClass');
 
 var _createClass3 = _interopRequireDefault(_createClass2);
 
+var _keys = require('babel-runtime/core-js/object/keys');
+
+var _keys2 = _interopRequireDefault(_keys);
+
 var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
@@ -41,21 +45,41 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var mContext = (0, _react.createContext)();
 //////////////////// util
-var toType = function toType(obj) {
-  return {}.toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase();
+// const toType = obj => {
+//   return {}.toString
+//     .call(obj)
+//     .match(/\s([a-zA-Z]+)/)[1]
+//     .toLowerCase();
+// };
+var breakUpContros = function breakUpContros(contros) {
+  if (contros.state) {
+    return contros;
+  }
+  var state = {},
+      methods = {};
+  (0, _keys2.default)(contros).forEach(function (i) {
+    state[i] = contros[i].state || {};
+    methods[i] = {};
+    methods[i].syncs = contros[i].syncs || {};
+    methods[i].asyncs = contros[i].asyncs || {};
+  });
+  return { state: state, methods: methods };
 };
 ////////////////////////////////////////////////////////////////
 
 //////////////// Store
 
 var Store = exports.Store = function () {
-  function Store(_ref) {
-    var state = _ref.state,
-        contros = _ref.contros;
+  function Store(contros) {
     (0, _classCallCheck3.default)(this, Store);
 
+    var _breakUpContros = breakUpContros(contros),
+        state = _breakUpContros.state,
+        methods = _breakUpContros.methods;
+
+    console.log(state, methods);
     this.state = state;
-    this.contros = this.notify(contros);
+    this.methods = this.notify(methods);
     this.listeners = [];
   }
 
@@ -77,38 +101,51 @@ var Store = exports.Store = function () {
       return this.state;
     }
   }, {
-    key: 'notify',
-    value: function notify(contros) {
+    key: 'bindMethods',
+    value: function bindMethods(methods, method) {
       var _this = this;
 
       var c = {};
       var that = this;
 
-      var _loop = function _loop(contro) {
-        c[contro] = function () {
-          var newState = (0, _immer2.default)(contros.syncs[contro]).bind(_this, that.state)();
-          _this.state = newState;
+      var _loop = function _loop(syncs) {
+        c[syncs] = function () {
+          var newState = (0, _immer2.default)(methods.syncs[syncs]).bind(_this, method ? that.state[method] : that.state)();
+          method ? that.state[method] = newState : _this.state = newState;
           _this.listeners.forEach(function (fn) {
             return fn();
           });
         };
       };
 
-      for (var contro in contros.syncs) {
-        _loop(contro);
+      for (var syncs in methods.syncs) {
+        _loop(syncs);
       }
 
-      var _loop2 = function _loop2(contro) {
-        c[contro] = function () {
-          contros.asyncs[contro].bind(_this.contros, _this.state)();
+      var _loop2 = function _loop2(async) {
+        c[async] = function () {
+          methods.asyncs[async].bind(method ? _this.methods[method] : _this.methods, _this.state)();
           _this.listeners.forEach(function (fn) {
             return fn();
           });
         };
       };
 
-      for (var contro in contros.asyncs) {
-        _loop2(contro);
+      for (var async in methods.asyncs) {
+        _loop2(async);
+      }
+      return c;
+    }
+  }, {
+    key: 'notify',
+    value: function notify(methods) {
+      var c = {};
+      if (methods.syncs) {
+        c = this.bindMethods(methods);
+      } else {
+        for (var method in methods) {
+          c[method] = this.bindMethods(methods[method], method);
+        }
       }
       return c;
     }
@@ -120,7 +157,7 @@ var Store = exports.Store = function () {
 //////////////// Hoc orm  ===>  {state,contro}
 
 
-var orm = exports.orm = function orm(mapState, mapContros) {
+var orm = exports.orm = function orm(mapState, mapMethods) {
   return function (WarpperComponent) {
     return function (_Component) {
       (0, _inherits3.default)(_class, _Component);
@@ -159,8 +196,8 @@ var orm = exports.orm = function orm(mapState, mapContros) {
         value: function _listen(context) {
           if (!context) throw Error('Please be wrapped in a <Provider/>');
           var stateToProps = mapState(context.state);
-          var controToProps = mapContros(context.contros);
-          return (0, _extends3.default)({}, stateToProps, controToProps);
+          var methodsToProps = mapMethods(context.methods);
+          return (0, _extends3.default)({}, stateToProps, methodsToProps);
         }
       }, {
         key: 'render',

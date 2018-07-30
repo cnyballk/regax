@@ -1,6 +1,6 @@
 {
   "name": "renaox",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "a boring state management",
   "main": "index.js",
   "scripts": {

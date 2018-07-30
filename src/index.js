@@ -1,21 +1,36 @@
 import React, { Component, createContext } from 'react';
 import produce from 'immer';
-
 const mContext = createContext();
 //////////////////// util
-const toType = obj => {
-  return {}.toString
-    .call(obj)
-    .match(/\s([a-zA-Z]+)/)[1]
-    .toLowerCase();
+// const toType = obj => {
+//   return {}.toString
+//     .call(obj)
+//     .match(/\s([a-zA-Z]+)/)[1]
+//     .toLowerCase();
+// };
+const breakUpContros = contros => {
+  if (contros.state) {
+    return contros;
+  }
+  const state = {},
+    methods = {};
+  Object.keys(contros).forEach(i => {
+    state[i] = contros[i].state || {};
+    methods[i] = {};
+    methods[i].syncs = contros[i].syncs || {};
+    methods[i].asyncs = contros[i].asyncs || {};
+  });
+  return { state, methods };
 };
 ////////////////////////////////////////////////////////////////
 
 //////////////// Store
 export class Store {
-  constructor({ state, contros }) {
+  constructor(contros) {
+    const { state, methods } = breakUpContros(contros);
+    console.log(state, methods);
     this.state = state;
-    this.contros = this.notify(contros);
+    this.methods = this.notify(methods);
     this.listeners = [];
   }
   listen(listener) {
@@ -27,24 +42,38 @@ export class Store {
   getState() {
     return this.state;
   }
-  notify(contros) {
-    let c = {};
-    let that = this;
-    for (let contro in contros.syncs) {
-      c[contro] = () => {
-        const newState = produce(contros.syncs[contro]).bind(
+  bindMethods(methods, method) {
+    const c = {};
+    const that = this;
+    for (const syncs in methods.syncs) {
+      c[syncs] = () => {
+        const newState = produce(methods.syncs[syncs]).bind(
           this,
-          that.state
+          method ? that.state[method] : that.state
         )();
-        this.state = newState;
+        method ? (that.state[method] = newState) : (this.state = newState);
         this.listeners.forEach(fn => fn());
       };
     }
-    for (let contro in contros.asyncs) {
-      c[contro] = () => {
-        contros.asyncs[contro].bind(this.contros, this.state)();
+    for (const async in methods.asyncs) {
+      c[async] = () => {
+        methods.asyncs[async].bind(
+          method ? this.methods[method] : this.methods,
+          this.state
+        )();
         this.listeners.forEach(fn => fn());
       };
+    }
+    return c;
+  }
+  notify(methods) {
+    let c = {};
+    if (methods.syncs) {
+      c = this.bindMethods(methods);
+    } else {
+      for (const method in methods) {
+        c[method] = this.bindMethods(methods[method], method);
+      }
     }
     return c;
   }
@@ -52,7 +81,7 @@ export class Store {
 ////////////////////////////////////////////////////////////////
 
 //////////////// Hoc orm  ===>  {state,contro}
-export const orm = (mapState, mapContros) => WarpperComponent =>
+export const orm = (mapState, mapMethods) => WarpperComponent =>
   class extends Component {
     constructor(props) {
       super(props);
@@ -75,10 +104,10 @@ export const orm = (mapState, mapContros) => WarpperComponent =>
     _listen(context) {
       if (!context) throw Error('Please be wrapped in a <Provider/>');
       const stateToProps = mapState(context.state);
-      const controToProps = mapContros(context.contros);
+      const methodsToProps = mapMethods(context.methods);
       return {
         ...stateToProps,
-        ...controToProps,
+        ...methodsToProps,
       };
     }
     render() {
