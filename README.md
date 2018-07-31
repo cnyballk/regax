@@ -97,9 +97,9 @@ const Count = props => {
       </div>
       <div>count B: {props.countB}</div>
       <div>
-        <button onClick={props.addCountB}>countB + 1</button>
-        <button onClick={props.asyncAddCountB}>async countB + 1</button>
-        <button onClick={props.subtractCountB}>countB - 1</button>
+        <button onClick={v => props.addCountB(1)}>countB + 1</button>
+        <button onClick={v => props.asyncAddCountB(2)}>async countB + 2</button>
+        <button onClick={v => props.subtractCountB(3)}>countB - 3</button>
       </div>
     </div>
   );
@@ -144,16 +144,16 @@ const controB = {
     count: 0,
   },
   syncs: {
-    addCount(state) {
-      state.count = state.count + 1;
+    addCount(state, payload) {
+      state.count = state.count + payload;
     },
-    subtractCount(state) {
-      state.count = state.count - 1;
+    subtractCount(state, payload) {
+      state.count = state.count - payload;
     },
   },
   asyncs: {
-    asyncAddCount() {
-      setTimeout(this.addCount, 1e3);
+    asyncAddCount(payload, rootState) {
+      setTimeout(() => this.addCount(payload), 1e3);
     },
   },
 };

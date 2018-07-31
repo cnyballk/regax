@@ -109,8 +109,8 @@ var Store = exports.Store = function () {
       var that = this;
 
       var _loop = function _loop(syncs) {
-        c[syncs] = function () {
-          var newState = (0, _immer2.default)(methods.syncs[syncs]).bind(_this, method ? that.state[method] : that.state)();
+        c[syncs] = function (payload) {
+          var newState = (0, _immer2.default)(methods.syncs[syncs]).bind(_this, method ? that.state[method] : that.state)(payload);
           method ? that.state[method] = newState : _this.state = newState;
           _this.listeners.forEach(function (fn) {
             return fn();
@@ -123,8 +123,8 @@ var Store = exports.Store = function () {
       }
 
       var _loop2 = function _loop2(async) {
-        c[async] = function () {
-          methods.asyncs[async].bind(method ? _this.methods[method] : _this.methods, _this.state)();
+        c[async] = function (payload) {
+          methods.asyncs[async].bind(method ? _this.methods[method] : _this.methods, payload, _this.state)();
           _this.listeners.forEach(function (fn) {
             return fn();
           });

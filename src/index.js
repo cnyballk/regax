@@ -46,19 +46,20 @@ export class Store {
     const c = {};
     const that = this;
     for (const syncs in methods.syncs) {
-      c[syncs] = () => {
+      c[syncs] = payload => {
         const newState = produce(methods.syncs[syncs]).bind(
           this,
           method ? that.state[method] : that.state
-        )();
+        )(payload);
         method ? (that.state[method] = newState) : (this.state = newState);
         this.listeners.forEach(fn => fn());
       };
     }
     for (const async in methods.asyncs) {
-      c[async] = () => {
+      c[async] = payload => {
         methods.asyncs[async].bind(
           method ? this.methods[method] : this.methods,
+          payload,
           this.state
         )();
         this.listeners.forEach(fn => fn());
