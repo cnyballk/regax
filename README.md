@@ -13,7 +13,9 @@ a boring state management
 ## Install
 
 ```bash
-npm install --save renaox
+npm i -S renaox
+or
+yarn add renaox
 ```
 
 ## Example
