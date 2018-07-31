@@ -56,15 +56,15 @@ const state = {
 
 const methods = {
   syncs: {
-    addCount(state) {
+    addCount(state, payload) {
       state.count = state.count + 1;
     },
-    subtractCount(state) {
+    subtractCount(state, payload) {
       state.count = state.count - 1;
     },
   },
   asyncs: {
-    asyncAddCount() {
+    asyncAddCount(payload, rootState) {
       setTimeout(this.addCount, 1e3);
     },
   },
@@ -126,15 +126,15 @@ const controA = {
     count: 0,
   },
   syncs: {
-    addCount(state) {
+    addCount(state, payload) {
       state.count = state.count + 1;
     },
-    subtractCount(state) {
+    subtractCount(state, payload) {
       state.count = state.count - 1;
     },
   },
   asyncs: {
-    asyncAddCount() {
+    asyncAddCount(payload, rootState) {
       setTimeout(this.addCount, 1e3);
     },
   },
