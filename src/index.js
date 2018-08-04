@@ -2,12 +2,18 @@ import React, { Component, createContext } from 'react';
 import produce from 'immer';
 const mContext = createContext();
 //////////////////// util
-// const toType = obj => {
-//   return {}.toString
-//     .call(obj)
-//     .match(/\s([a-zA-Z]+)/)[1]
-//     .toLowerCase();
-// };
+const isEmptyArray = arr => {
+  return arr.length === 0;
+};
+const toType = obj => {
+  return {}.toString
+    .call(obj)
+    .match(/\s([a-zA-Z]+)/)[1]
+    .toLowerCase();
+};
+const isArray = x => {
+  return toType(x) === 'array';
+};
 const breakUpContros = contros => {
   if (contros.state) {
     return contros;
@@ -26,12 +32,13 @@ const breakUpContros = contros => {
 
 //////////////// Store
 export class Store {
-  constructor(contros) {
+  constructor(contros, middlewares) {
     const { state, methods } = breakUpContros(contros);
     console.log(state, methods);
     this.state = state;
     this.methods = this.notify(methods);
     this.listeners = [];
+    this.middlewares = isArray(middlewares) ? middlewares : [];
   }
   listen(listener) {
     return this.listeners.push(listener);
@@ -45,13 +52,21 @@ export class Store {
   bindMethods(methods, method) {
     const c = {};
     const that = this;
+
     for (const syncs in methods.syncs) {
       c[syncs] = payload => {
-        const newState = produce(methods.syncs[syncs]).bind(
-          this,
-          method ? that.state[method] : that.state
-        )(payload);
-        method ? (that.state[method] = newState) : (this.state = newState);
+        //留存next函数
+        const next = p => {
+          const newState = produce(methods.syncs[syncs]).bind(
+            this,
+            method ? that.state[method] : that.state
+          )(p);
+          method ? (that.state[method] = newState) : (this.state = newState);
+        };
+        // 中间件
+        isEmptyArray(this.middlewares)
+          ? next(payload)
+          : this.middlewares.map(fn => fn(this.state)(next)(payload));
         this.listeners.forEach(fn => fn());
       };
     }

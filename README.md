@@ -69,8 +69,14 @@ const methods = {
     },
   },
 };
-
-const store = new Store({ state, methods });
+//一个打印state改变前后的log中间件，最好放在最后一个
+const log = state => next => payload => {
+  console.group('改变前：', { ...state });
+  next(payload);
+  console.log('改变后：', { ...state });
+  console.groupEnd();
+};
+const store = new Store({ state, methods }, [log]);
 
 ReactDOM.render(
   <Provider store={store}>

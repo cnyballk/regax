@@ -45,12 +45,15 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var mContext = (0, _react.createContext)();
 //////////////////// util
-// const toType = obj => {
-//   return {}.toString
-//     .call(obj)
-//     .match(/\s([a-zA-Z]+)/)[1]
-//     .toLowerCase();
-// };
+var isEmptyArray = function isEmptyArray(arr) {
+  return arr.length === 0;
+};
+var toType = function toType(obj) {
+  return {}.toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase();
+};
+var isArray = function isArray(x) {
+  return toType(x) === 'array';
+};
 var breakUpContros = function breakUpContros(contros) {
   if (contros.state) {
     return contros;
@@ -70,7 +73,7 @@ var breakUpContros = function breakUpContros(contros) {
 //////////////// Store
 
 var Store = exports.Store = function () {
-  function Store(contros) {
+  function Store(contros, middlewares) {
     (0, _classCallCheck3.default)(this, Store);
 
     var _breakUpContros = breakUpContros(contros),
@@ -81,6 +84,7 @@ var Store = exports.Store = function () {
     this.state = state;
     this.methods = this.notify(methods);
     this.listeners = [];
+    this.middlewares = isArray(middlewares) ? middlewares : [];
   }
 
   (0, _createClass3.default)(Store, [{
@@ -110,8 +114,15 @@ var Store = exports.Store = function () {
 
       var _loop = function _loop(syncs) {
         c[syncs] = function (payload) {
-          var newState = (0, _immer2.default)(methods.syncs[syncs]).bind(_this, method ? that.state[method] : that.state)(payload);
-          method ? that.state[method] = newState : _this.state = newState;
+          //留存next函数
+          var next = function next(p) {
+            var newState = (0, _immer2.default)(methods.syncs[syncs]).bind(_this, method ? that.state[method] : that.state)(p);
+            method ? that.state[method] = newState : _this.state = newState;
+          };
+          // 中间件
+          isEmptyArray(_this.middlewares) ? next(payload) : _this.middlewares.map(function (fn) {
+            return fn(_this.state)(next)(payload);
+          });
           _this.listeners.forEach(function (fn) {
             return fn();
           });
