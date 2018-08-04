@@ -43,7 +43,7 @@ const mapState = state => ({
 });
 
 const mapMethods = methods => ({
-  addCount: methods.addCount,
+  addCount: () => methods.addCount(1),
   subtractCount: methods.subtractCount,
   asyncAddCount: methods.asyncAddCount,
 });
@@ -57,7 +57,7 @@ const state = {
 const methods = {
   syncs: {
     addCount(state, payload) {
-      state.count = state.count + 1;
+      state.count = state.count + payload;
     },
     subtractCount(state, payload) {
       state.count = state.count - 1;
@@ -65,15 +65,15 @@ const methods = {
   },
   asyncs: {
     asyncAddCount(payload, rootState) {
-      setTimeout(this.addCount, 1e3);
+      setTimeout(() => this.addCount(1), 1e3);
     },
   },
 };
-//一个打印state改变前后的log中间件，最好放在最后一个
-const log = state => next => payload => {
-  console.group('改变前：', { ...state });
-  next(payload);
-  console.log('改变后：', { ...state });
+//一个打印state改变前后的log中间件
+const log = store => next => payload => {
+  console.group('改变前：', store.state);
+  next(payload + 1);
+  console.log('改变后：', store.state);
   console.groupEnd();
 };
 const store = new Store({ state, methods }, [log]);

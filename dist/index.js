@@ -46,7 +46,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var mContext = (0, _react.createContext)();
 //////////////////// util
 var isEmptyArray = function isEmptyArray(arr) {
-  return arr.length === 0;
+  return isArray(arr) ? arr.length === 0 : true;
 };
 var toType = function toType(obj) {
   return {}.toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase();
@@ -74,6 +74,8 @@ var breakUpContros = function breakUpContros(contros) {
 
 var Store = exports.Store = function () {
   function Store(contros, middlewares) {
+    var _this = this;
+
     (0, _classCallCheck3.default)(this, Store);
 
     var _breakUpContros = breakUpContros(contros),
@@ -82,9 +84,18 @@ var Store = exports.Store = function () {
 
     console.log(state, methods);
     this.state = state;
+    this.middlewares = isEmptyArray(middlewares) ? false : middlewares;
+    //绑定中间件
+    this.bindMiddlewares = this.middlewares && this.middlewares.map(function (fn) {
+      return fn(_this);
+    }).reduce(function (a, b) {
+      return function (p) {
+        return a(b(p));
+      };
+    });
+    // 绑定方法
     this.methods = this.notify(methods);
     this.listeners = [];
-    this.middlewares = isArray(middlewares) ? middlewares : [];
   }
 
   (0, _createClass3.default)(Store, [{
@@ -107,26 +118,23 @@ var Store = exports.Store = function () {
   }, {
     key: 'bindMethods',
     value: function bindMethods(methods, method) {
-      var _this = this;
+      var _this2 = this;
 
       var c = {};
       var that = this;
 
       var _loop = function _loop(syncs) {
-        c[syncs] = function (payload) {
-          //留存next函数
-          var next = function next(p) {
-            var newState = (0, _immer2.default)(methods.syncs[syncs]).bind(_this, method ? that.state[method] : that.state)(p);
-            method ? that.state[method] = newState : _this.state = newState;
-          };
-          // 中间件
-          isEmptyArray(_this.middlewares) ? next(payload) : _this.middlewares.map(function (fn) {
-            return fn(_this.state)(next)(payload);
-          });
-          _this.listeners.forEach(function (fn) {
+        // 留存next函数
+        var next = function next(payload) {
+          var newState = (0, _immer2.default)(methods.syncs[syncs]).bind(_this2, method ? that.state[method] : that.state)(payload);
+          method ? that.state[method] = newState : _this2.state = newState;
+
+          _this2.listeners.forEach(function (fn) {
             return fn();
           });
         };
+        // 使用中间件
+        c[syncs] = _this2.bindMiddlewares ? _this2.bindMiddlewares(next) : next;
       };
 
       for (var syncs in methods.syncs) {
@@ -135,8 +143,8 @@ var Store = exports.Store = function () {
 
       var _loop2 = function _loop2(async) {
         c[async] = function (payload) {
-          methods.asyncs[async].bind(method ? _this.methods[method] : _this.methods, payload, _this.state)();
-          _this.listeners.forEach(function (fn) {
+          methods.asyncs[async].bind(method ? _this2.methods[method] : _this2.methods, payload, _this2.state)();
+          _this2.listeners.forEach(function (fn) {
             return fn();
           });
         };
@@ -176,13 +184,13 @@ var orm = exports.orm = function orm(mapState, mapMethods) {
       function _class(props) {
         (0, _classCallCheck3.default)(this, _class);
 
-        var _this2 = (0, _possibleConstructorReturn3.default)(this, (_class.__proto__ || (0, _getPrototypeOf2.default)(_class)).call(this, props));
+        var _this3 = (0, _possibleConstructorReturn3.default)(this, (_class.__proto__ || (0, _getPrototypeOf2.default)(_class)).call(this, props));
 
-        _this2._isMounted = false;
-        _this2.state = {};
-        _this2._listen = _this2._listen.bind(_this2);
-        _this2.updata = _this2.updata.bind(_this2);
-        return _this2;
+        _this3._isMounted = false;
+        _this3.state = {};
+        _this3._listen = _this3._listen.bind(_this3);
+        _this3.updata = _this3.updata.bind(_this3);
+        return _this3;
       }
 
       (0, _createClass3.default)(_class, [{
@@ -213,14 +221,14 @@ var orm = exports.orm = function orm(mapState, mapMethods) {
       }, {
         key: 'render',
         value: function render() {
-          var _this3 = this;
+          var _this4 = this;
 
           return _react2.default.createElement(
             mContext.Consumer,
             null,
             function (context) {
-              _this3.store = context;
-              return _react2.default.createElement(WarpperComponent, _this3._listen(context));
+              _this4.store = context;
+              return _react2.default.createElement(WarpperComponent, _this4._listen(context));
             }
           );
         }
