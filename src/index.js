@@ -34,7 +34,6 @@ const breakUpContros = contros => {
 export class Store {
   constructor(contros, middlewares) {
     const { state, methods } = breakUpContros(contros);
-    console.log(state, methods);
     this.state = state;
     this.middlewares = isEmptyArray(middlewares) ? false : middlewares;
     //绑定中间件

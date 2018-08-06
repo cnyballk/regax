@@ -82,7 +82,6 @@ var Store = exports.Store = function () {
         state = _breakUpContros.state,
         methods = _breakUpContros.methods;
 
-    console.log(state, methods);
     this.state = state;
     this.middlewares = isEmptyArray(middlewares) ? false : middlewares;
     //绑定中间件
