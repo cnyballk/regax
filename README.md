@@ -10,6 +10,8 @@
 
 a boring state management
 
+> v1.1.1 提供一个 asyncs 的 loading 名字是 async 方法名字＋ Loading
+
 ## Install
 
 ```bash
@@ -30,7 +32,7 @@ import { Store, Provider, orm } from 'renaox';
 const Count = props => {
   return (
     <div>
-      <div>count : {props.count}</div>
+      <div>count : {props.loading ? 'loading...' : props.count}</div>
       <button onClick={props.addCount}>count + 1</button>
       <button onClick={props.asyncAddCount}>async count + 1</button>
       <button onClick={props.subtractCount}>count - 1</button>
@@ -40,6 +42,7 @@ const Count = props => {
 
 const mapState = state => ({
   count: state.count,
+  loading: state.asyncAddCountLoading, //自动生成的loading  asyncAddCount + Loading
 });
 
 const mapMethods = methods => ({
@@ -64,15 +67,18 @@ const methods = {
     },
   },
   asyncs: {
-    asyncAddCount(payload, rootState) {
-      setTimeout(() => this.addCount(1), 1e3);
+    asyncAddCount(payload, rootState, end) {
+      setTimeout(() => {
+        this.addCount(1);
+        end(); //通知结束loading  如果不需要loading则可以不用
+      }, 1e3);
     },
   },
 };
 //一个打印state改变前后的log中间件
-const log = store => next => payload => {
+const log = store => fn => next => payload => {
   console.group('改变前：', store.state);
-  next(payload);
+  next(fn, payload);
   console.log('改变后：', store.state);
   console.groupEnd();
 };
@@ -88,87 +94,22 @@ ReactDOM.render(
 
 ### 多个 Contro 的时候
 
-```js
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { Store, Provider, orm } from 'renaox';
-const Count = props => {
-  return (
-    <div>
-      <div>count A: {props.countA}</div>
-      <div>
-        <button onClick={props.addCountA}>countA + 1</button>
-        <button onClick={props.asyncAddCountA}>async countA + 1</button>
-        <button onClick={props.subtractCountA}>countA - 1</button>
-      </div>
-      <div>count B: {props.countB}</div>
-      <div>
-        <button onClick={v => props.addCountB(1)}>countB + 1</button>
-        <button onClick={v => props.asyncAddCountB(2)}>async countB + 2</button>
-        <button onClick={v => props.subtractCountB(3)}>countB - 3</button>
-      </div>
-    </div>
-  );
-};
+当稍大的项目就需要分层 则可以使用多个 Contro
 
+```js
+///略
 const mapState = state => ({
   countA: state.controA.count,
   countB: state.controB.count,
 });
-
-const mapMethods = methods => ({
-  addCountA: methods.controA.addCount,
-  subtractCountA: methods.controA.subtractCount,
-  asyncAddCountA: methods.controA.asyncAddCount,
-  addCountB: methods.controB.addCount,
-  subtractCountB: methods.controB.subtractCount,
-  asyncAddCountB: methods.controB.asyncAddCount,
-});
-
-const CountContainer = orm(mapState, mapMethods)(Count);
+///略
 
 const controA = {
-  state: {
-    count: 0,
-  },
-  syncs: {
-    addCount(state, payload) {
-      state.count = state.count + 1;
-    },
-    subtractCount(state, payload) {
-      state.count = state.count - 1;
-    },
-  },
-  asyncs: {
-    asyncAddCount(payload, rootState) {
-      setTimeout(this.addCount, 1e3);
-    },
-  },
+  state: { count: 0 },
 };
 const controB = {
-  state: {
-    count: 0,
-  },
-  syncs: {
-    addCount(state, payload) {
-      state.count = state.count + payload;
-    },
-    subtractCount(state, payload) {
-      state.count = state.count - payload;
-    },
-  },
-  asyncs: {
-    asyncAddCount(payload, rootState) {
-      setTimeout(() => this.addCount(payload), 1e3);
-    },
-  },
+  state: { count: 0 },
 };
-const store = new Store({ controA, controB });
 
-ReactDOM.render(
-  <Provider store={store}>
-    <CountContainer />
-  </Provider>,
-  document.getElementById('root')
-);
+const store = new Store({ controA, controB });
 ```
