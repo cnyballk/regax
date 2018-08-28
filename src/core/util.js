@@ -11,14 +11,17 @@ export const toType = obj => {
 export const isArray = x => {
   return toType(x) === 'array';
 };
+export const isPromise = (x = {}) => {
+  return x.then && toType(x.then) === 'function';
+};
 export const breakUpContros = contros => {
   if (contros.state) {
-    return contros;
+    return { ...contros, state: { ...contros.state, loading: {} } };
   }
   const state = {},
     methods = {};
   Object.keys(contros).forEach(i => {
-    state[i] = contros[i].state || {};
+    state[i] = { ...contros[i].state, loading: {} } || { loading: {} };
     methods[i] = {};
     methods[i].syncs = contros[i].syncs || {};
     methods[i].asyncs = contros[i].asyncs || {};

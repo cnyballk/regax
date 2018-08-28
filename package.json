@@ -1,6 +1,6 @@
 {
   "name": "renaox",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "a boring state management",
   "main": "index.js",
   "scripts": {
@@ -15,6 +15,7 @@
   "dependencies": {
     "babel-core": "^6.26.3",
     "babel-runtime": "^6.26.0",
+    "fast-deep-equal": "^2.0.1",
     "immer": "^1.3.1"
   },
   "devDependencies": {

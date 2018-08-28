@@ -1,4 +1,5 @@
 import React, { Component, createContext } from 'react';
+import equal from 'fast-deep-equal';
 
 const mContext = createContext();
 
@@ -8,12 +9,15 @@ export const orm = (mapState, mapMethods) => WarpperComponent =>
     constructor(props) {
       super(props);
       this._isMounted = false;
-      this.state = {};
-      this._listen = this._listen.bind(this);
+      this.state = { stateProps: {} };
       this.updata = this.updata.bind(this);
+      this.methodsProps = {};
     }
     componentDidMount() {
+      if (!this.store) throw Error('Please be wrapped in a <Provider/>');
       this._isMounted = true;
+      this.ormMethodsToProps();
+      this.updata();
       this.store.listen(this.updata);
     }
     componentWillUnmount() {
@@ -21,23 +25,20 @@ export const orm = (mapState, mapMethods) => WarpperComponent =>
       this.store.unListen(this.updata);
     }
     updata() {
-      this.setState({});
+      const stateProps = mapState(this.store.state);
+      !equal(this.state.stateProps, stateProps) &&
+        this.setState({ stateProps });
     }
-    _listen(context) {
-      if (!context) throw Error('Please be wrapped in a <Provider/>');
-      const stateToProps = mapState(context.state);
-      const methodsToProps = mapMethods(context.methods);
-      return {
-        ...stateToProps,
-        ...methodsToProps,
-      };
+    ormMethodsToProps() {
+      this.methodsProps = mapMethods(this.store.methods);
     }
     render() {
+      const { stateProps } = this.state;
       return (
         <mContext.Consumer>
           {context => {
             this.store = context;
-            return <WarpperComponent {...this._listen(context)} />;
+            return <WarpperComponent {...stateProps} {...this.methodsProps} />;
           }}
         </mContext.Consumer>
       );

@@ -1,17 +1,12 @@
 import produce from 'immer';
-import { breakUpContros, isEmptyArray } from './util';
+import { breakUpContros, isEmptyArray, isPromise } from './util';
 
 //////////////// Store
 export default class Store {
   constructor(contros, middlewares) {
     const { state, methods } = breakUpContros(contros);
-    console.log(state, methods);
     this.state = state;
     this.middlewares = isEmptyArray(middlewares) ? false : middlewares;
-    // //绑定中间件
-    // this.bindMiddlewares =
-    //   this.middlewares &&
-    //   this.middlewares.map(fn => fn(this)).reduce((a, b) => p => a(b(p)));
     // 绑定方法
     this.methods = this.notify(methods);
     this.listeners = [];
@@ -26,9 +21,9 @@ export default class Store {
     return this.state;
   }
   _toggleLoading(async, method, bool) {
-    if (this.state[async + 'Loading'] && bool) return; //如果不使用则只调用一次 避免重复渲染
+    if (this.state['loading'][async] && bool) return; //如果不使用则只调用一次 避免重复渲染
     const newState = produce(state => {
-      state[async + 'Loading'] = bool;
+      state['loading'][async] = bool;
     }).bind(this, method ? this.state[method] : this.state)();
     method ? (this.state[method] = newState) : (this.state = newState);
     this.listeners.forEach(fn => fn());
@@ -37,7 +32,9 @@ export default class Store {
     const c = {};
     const that = this;
 
+    //同步
     for (const syncs in methods.syncs) {
+      //绑定中间件
       this.bindMiddlewares =
         this.middlewares &&
         this.middlewares
@@ -58,15 +55,23 @@ export default class Store {
       c[syncs] = this.bindMiddlewares ? this.bindMiddlewares(next) : next;
     }
 
+    //异步
     for (const async in methods.asyncs) {
       c[async] = payload => {
-        this._toggleLoading(async, method, true);
-        return methods.asyncs[async].bind(
+        const p = methods.asyncs[async].bind(
           method ? this.methods[method] : this.methods,
           payload,
-          this.state,
-          this._toggleLoading.bind(this, async, method, false)
+          this.state
         )();
+
+        if (isPromise(p)) {
+          this._toggleLoading(async, method, true);
+          p.then(() => {
+            this._toggleLoading(async, method, false);
+          });
+        }
+
+        return p;
       };
     }
     return c;

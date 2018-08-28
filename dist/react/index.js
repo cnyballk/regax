@@ -33,6 +33,10 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
+var _fastDeepEqual = require('fast-deep-equal');
+
+var _fastDeepEqual2 = _interopRequireDefault(_fastDeepEqual);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var mContext = (0, _react.createContext)();
@@ -49,16 +53,19 @@ var orm = exports.orm = function orm(mapState, mapMethods) {
         var _this = (0, _possibleConstructorReturn3.default)(this, (_class.__proto__ || (0, _getPrototypeOf2.default)(_class)).call(this, props));
 
         _this._isMounted = false;
-        _this.state = {};
-        _this._listen = _this._listen.bind(_this);
+        _this.state = { stateProps: {} };
         _this.updata = _this.updata.bind(_this);
+        _this.methodsProps = {};
         return _this;
       }
 
       (0, _createClass3.default)(_class, [{
         key: 'componentDidMount',
         value: function componentDidMount() {
+          if (!this.store) throw Error('Please be wrapped in a <Provider/>');
           this._isMounted = true;
+          this.ormMethodsToProps();
+          this.updata();
           this.store.listen(this.updata);
         }
       }, {
@@ -70,27 +77,27 @@ var orm = exports.orm = function orm(mapState, mapMethods) {
       }, {
         key: 'updata',
         value: function updata() {
-          this.setState({});
+          var stateProps = mapState(this.store.state);
+          !(0, _fastDeepEqual2.default)(this.state.stateProps, stateProps) && this.setState({ stateProps: stateProps });
         }
       }, {
-        key: '_listen',
-        value: function _listen(context) {
-          if (!context) throw Error('Please be wrapped in a <Provider/>');
-          var stateToProps = mapState(context.state);
-          var methodsToProps = mapMethods(context.methods);
-          return (0, _extends3.default)({}, stateToProps, methodsToProps);
+        key: 'ormMethodsToProps',
+        value: function ormMethodsToProps() {
+          this.methodsProps = mapMethods(this.store.methods);
         }
       }, {
         key: 'render',
         value: function render() {
           var _this2 = this;
 
+          var stateProps = this.state.stateProps;
+
           return _react2.default.createElement(
             mContext.Consumer,
             null,
             function (context) {
               _this2.store = context;
-              return _react2.default.createElement(WarpperComponent, _this2._listen(context));
+              return _react2.default.createElement(WarpperComponent, (0, _extends3.default)({}, stateProps, _this2.methodsProps));
             }
           );
         }

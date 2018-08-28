@@ -29,13 +29,8 @@ var Store = function () {
         state = _breakUpContros.state,
         methods = _breakUpContros.methods;
 
-    console.log(state, methods);
     this.state = state;
     this.middlewares = (0, _util.isEmptyArray)(middlewares) ? false : middlewares;
-    // //绑定中间件
-    // this.bindMiddlewares =
-    //   this.middlewares &&
-    //   this.middlewares.map(fn => fn(this)).reduce((a, b) => p => a(b(p)));
     // 绑定方法
     this.methods = this.notify(methods);
     this.listeners = [];
@@ -61,9 +56,9 @@ var Store = function () {
   }, {
     key: '_toggleLoading',
     value: function _toggleLoading(async, method, bool) {
-      if (this.state[async + 'Loading'] && bool) return; //如果不使用则只调用一次 避免重复渲染
+      if (this.state['loading'][async] && bool) return; //如果不使用则只调用一次 避免重复渲染
       var newState = (0, _immer2.default)(function (state) {
-        state[async + 'Loading'] = bool;
+        state['loading'][async] = bool;
       }).bind(this, method ? this.state[method] : this.state)();
       method ? this.state[method] = newState : this.state = newState;
       this.listeners.forEach(function (fn) {
@@ -78,7 +73,10 @@ var Store = function () {
       var c = {};
       var that = this;
 
+      //同步
+
       var _loop = function _loop(syncs) {
+        //绑定中间件
         _this.bindMiddlewares = _this.middlewares && _this.middlewares.map(function (fn) {
           return fn(_this);
         }).map(function (fn) {
@@ -105,10 +103,20 @@ var Store = function () {
         _loop(syncs);
       }
 
+      //异步
+
       var _loop2 = function _loop2(async) {
         c[async] = function (payload) {
-          _this._toggleLoading(async, method, true);
-          return methods.asyncs[async].bind(method ? _this.methods[method] : _this.methods, payload, _this.state, _this._toggleLoading.bind(_this, async, method, false))();
+          var p = methods.asyncs[async].bind(method ? _this.methods[method] : _this.methods, payload, _this.state)();
+
+          if ((0, _util.isPromise)(p)) {
+            _this._toggleLoading(async, method, true);
+            p.then(function () {
+              _this._toggleLoading(async, method, false);
+            });
+          }
+
+          return p;
         };
       };
 

@@ -8,11 +8,19 @@
 [download-image]: https://img.shields.io/npm/dm/renaox.svg?style=flat-square
 [download-url]: https://npmjs.org/package/renaox
 
-a boring state management
+### 为啥会写这么一个库？
 
-> v1.1.1 提供一个 asyncs 的 loading 名字是 async 方法名字＋ Loading
+emmm...其实刚入门 react 的时候 接触的 redux，深受繁琐的毒害后就写了这么一个库，现在已经替换掉项目中的 redux，目前只支持 react16+，因为依赖了 react 新的 context Api
 
-## Install
+### 特点
+
+- 支持中间件
+- 中大型项目可多个 contro 区分模块
+- async 自带 loading
+- orm 方法自带 SCU
+- 性能好
+
+### 安装
 
 ```bash
 npm i -S renaox
@@ -20,7 +28,7 @@ or
 yarn add renaox
 ```
 
-## Example
+## 例子
 
 ### 一个 Contro 的时候
 
@@ -29,20 +37,26 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Store, Provider, orm } from 'renaox';
 
-const Count = props => {
+const Count = ({ loading, count, addCount, asyncAddCount, subtractCount }) => {
   return (
     <div>
-      <div>count : {props.loading ? 'loading...' : props.count}</div>
-      <button onClick={props.addCount}>count + 1</button>
-      <button onClick={props.asyncAddCount}>async count + 1</button>
-      <button onClick={props.subtractCount}>count - 1</button>
+      <div>count : {loading ? 'loading...' : count}</div>
+      <button disabled={loading} onClick={addCount}>
+        count + 1
+      </button>
+      <button disabled={loading} onClick={asyncAddCount}>
+        async count + 1
+      </button>
+      <button disabled={loading} onClick={subtractCount}>
+        count - 1
+      </button>
     </div>
   );
 };
 
 const mapState = state => ({
   count: state.count,
-  loading: state.asyncAddCountLoading, //自动生成的loading  asyncAddCount + Loading
+  loading: state.loading.asyncAddCount, //当使用async后自动生成的loading   loading.xxxName
 });
 
 const mapMethods = methods => ({
@@ -67,11 +81,13 @@ const methods = {
     },
   },
   asyncs: {
-    asyncAddCount(payload, rootState, end) {
-      setTimeout(() => {
-        this.addCount(1);
-        end(); //通知结束loading  如果不需要loading则可以不用
-      }, 1e3);
+    async asyncAddCount(payload, rootState) {
+      const c = await new Promise(resolve => {
+        setTimeout(() => {
+          resolve(1);
+        }, 2000);
+      });
+      this.addCount(c);
     },
   },
 };
@@ -113,3 +129,7 @@ const controB = {
 
 const store = new Store({ controA, controB });
 ```
+
+## 开源协议
+
+MIT
