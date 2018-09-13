@@ -74,16 +74,13 @@ var Store = function () {
       var that = this;
 
       //同步
-
-      var _loop = function _loop(syncs) {
+      for (var syncs in methods.syncs) {
         //绑定中间件
-        _this.bindMiddlewares = _this.middlewares && _this.middlewares.map(function (fn) {
+        this.bindMiddlewares = this.middlewares && this.middlewares.map(function (fn) {
           return fn(_this);
-        }).map(function (fn) {
-          return fn(methods.syncs[syncs]);
         }).reduce(function (a, b) {
-          return function (p) {
-            return a(b(p));
+          return function () {
+            return a(b.apply(undefined, arguments));
           };
         });
         // 留存next函数
@@ -96,16 +93,12 @@ var Store = function () {
           });
         };
         // 使用中间件
-        c[syncs] = _this.bindMiddlewares ? _this.bindMiddlewares(next) : next;
-      };
-
-      for (var syncs in methods.syncs) {
-        _loop(syncs);
+        c[syncs] = this.bindMiddlewares ? this.bindMiddlewares(next).bind(this, methods.syncs[syncs]) : next;
       }
 
       //异步
 
-      var _loop2 = function _loop2(async) {
+      var _loop = function _loop(async) {
         c[async] = function (payload) {
           var p = methods.asyncs[async].bind(method ? _this.methods[method] : _this.methods, payload, _this.state)();
 
@@ -121,7 +114,7 @@ var Store = function () {
       };
 
       for (var async in methods.asyncs) {
-        _loop2(async);
+        _loop(async);
       }
       return c;
     }

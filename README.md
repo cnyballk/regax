@@ -82,17 +82,15 @@ const methods = {
   },
   asyncs: {
     async asyncAddCount(payload, rootState) {
-      const c = await new Promise(resolve => {
-        setTimeout(() => {
-          resolve(1);
-        }, 2000);
+      await new Promise(resolve => {
+        setTimeout(resolve, 2000);
       });
-      this.addCount(c);
+      this.addCount(1);
     },
   },
 };
 //一个打印state改变前后的log中间件
-const log = store => fn => next => payload => {
+const log = store => next => (fn, payload) => {
   console.group('改变前：', store.state);
   next(fn, payload);
   console.log('改变后：', store.state);

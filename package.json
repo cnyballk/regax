@@ -1,6 +1,6 @@
 {
   "name": "renaox",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "a boring state management",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "url": "git@cnyballk:cnyballk/renaox.git"
   },
   "author": "cnyballk",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "babel-core": "^6.26.3",
     "babel-runtime": "^6.26.0",
