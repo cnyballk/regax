@@ -104,7 +104,7 @@ var Store = function () {
 
           if ((0, _util.isPromise)(p)) {
             _this._toggleLoading(async, method, true);
-            p.then(function () {
+            p.finally(function () {
               _this._toggleLoading(async, method, false);
             });
           }
